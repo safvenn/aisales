@@ -1,6 +1,14 @@
 import { Bell, Search, Menu, Command } from 'lucide-react'
 
-export default function Header({ sidebarOpen, setSidebarOpen, searchTerm, setSearchTerm }) {
+const statusStyles = {
+  online: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.35)]',
+  offline: 'bg-red-500/10 border-red-500/20 text-red-400 shadow-[0_0_8px_rgba(239,68,68,0.3)]',
+  checking: 'bg-amber-500/10 border-amber-500/20 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.25)]',
+}
+
+export default function Header({ sidebarOpen, setSidebarOpen, searchTerm, setSearchTerm, systemStatus }) {
+  const currentStatus = systemStatus?.state || 'checking'
+
   return (
     <header className="h-16 glass border-b border-white/5 px-4 md:px-8 flex items-center justify-between sticky top-0 z-10 transition-all">
       <div className="flex items-center space-x-4">
@@ -29,9 +37,9 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchTerm, setSea
 
       <div className="flex items-center space-x-4">
         {/* Connection Status */}
-        <div className="hidden sm:flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-          <span className="text-xs text-emerald-400 font-medium tracking-wide">SYSTEM ACTIVE</span>
+        <div className={`hidden sm:flex items-center space-x-2 border px-3 py-1.5 rounded-full ${statusStyles[currentStatus] || statusStyles.checking}`}>
+          <div className={`w-2 h-2 rounded-full ${currentStatus === 'online' ? 'bg-emerald-400 animate-pulse' : currentStatus === 'offline' ? 'bg-red-400' : 'bg-amber-300 animate-pulse'}`} />
+          <span className="text-xs font-medium tracking-wide">{systemStatus?.label || 'CHECKING API'}</span>
         </div>
 
         <button className="relative p-2 rounded-full hover:bg-white/5 text-white/70 hover:text-white transition-colors">

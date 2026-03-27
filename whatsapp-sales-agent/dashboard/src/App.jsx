@@ -7,6 +7,11 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeTab, setActiveTab] = useState('Dashboard')
   const [searchTerm, setSearchTerm] = useState('')
+  const [systemStatus, setSystemStatus] = useState({
+    state: 'checking',
+    label: 'CHECKING API',
+    detail: 'Connecting to backend',
+  })
 
   return (
     <div className="min-h-screen bg-[#050505] flex text-white overflow-hidden relative selection:bg-blue-500/30">
@@ -17,10 +22,16 @@ function App() {
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        <Header
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          systemStatus={systemStatus}
+        />
         <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
           {activeTab === 'Dashboard' ? (
-            <Dashboard searchTerm={searchTerm} />
+            <Dashboard searchTerm={searchTerm} setSystemStatus={setSystemStatus} />
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center animate-pulse">
                <div className="w-20 h-20 bg-white/5 rounded-3xl mb-6 flex items-center justify-center border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)]">

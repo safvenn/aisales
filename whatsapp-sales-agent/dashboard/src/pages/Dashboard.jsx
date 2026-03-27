@@ -4,7 +4,7 @@ import { MessagesSquare, Users, PhoneForwarded, Target, MoreHorizontal, ArrowUpR
 import { clsx } from 'clsx'
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = (import.meta.env.VITE_API_URL || 'https://aisales-jzjw.onrender.com/api').replace(/\/+$/, '');
 
 const chartData = [
   { name: '08:00', sent: 10, replied: 2 },
@@ -16,7 +16,7 @@ const chartData = [
   { name: '20:00', sent: 180, replied: 85 }
 ];
 
-export default function Dashboard({ searchTerm = '' }) {
+export default function Dashboard({ searchTerm = '', setSystemStatus = () => {} }) {
   const [statsData, setStatsData] = useState({
     leads: { total: 0, pending: 0, contacted: 0, interested: 0, hot: 0, dead: 0, converted: 0 },
     messages: 0
@@ -37,6 +37,12 @@ export default function Dashboard({ searchTerm = '' }) {
 
   const fetchData = async () => {
     try {
+      setSystemStatus({
+        state: 'checking',
+        label: 'CHECKING API',
+        detail: `Connecting to ${API_URL}`
+      });
+
       const [statsRes, leadsRes, campRes] = await Promise.all([
         axios.get(`${API_URL}/stats`),
         axios.get(`${API_URL}/leads?limit=10`),
@@ -49,8 +55,18 @@ export default function Dashboard({ searchTerm = '' }) {
       });
       setRecentLeads(leadsRes?.data?.leads || []);
       setCampaign(campRes?.data || { isRunning: false, currentAudience: null });
+      setSystemStatus({
+        state: 'online',
+        label: 'API ONLINE',
+        detail: API_URL
+      });
     } catch (err) {
-      console.error("Error fetching dashboard data");
+      setSystemStatus({
+        state: 'offline',
+        label: 'API OFFLINE',
+        detail: err?.response?.data?.error || err?.message || 'Unable to reach backend'
+      });
+      console.error('Error fetching dashboard data', err);
     } finally {
       setLoading(false);
     }
@@ -170,6 +186,7 @@ export default function Dashboard({ searchTerm = '' }) {
                 "System is resting. Awaiting coordinates."
               )}
             </p>
+            <p className="text-xs text-white/40 mt-1">Backend: {API_URL}</p>
           </div>
         </div>
         

@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  # ─────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-salesdb}
+      POSTGRES_USER: ${POSTGRES_USER:-salesuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-salesuser} -d ${POSTGRES_DB:-salesdb}"]
+      interval: 10s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # Node.js Backend API
+  # ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-salesuser}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-salesdb}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    volumes:
+      - baileys_auth_info:/app/baileys_auth_info
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────
+  # n8n Automation Engine
+  # ─────────────────────────────────────────
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      NODE_ENV: production
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: Asia/Kolkata
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-salesdb}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-salesuser}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-changeme-please-generate-random-32chars}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  n8n_data:
+  baileys_auth_info:

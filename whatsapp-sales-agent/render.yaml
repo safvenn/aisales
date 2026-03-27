@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: n8n-automation
+    env: docker
+    plan: free
+    # We use a 1GB Free Disk to persistently store your n8n workflows and SQLite data
+    disk:
+      name: n8n_data
+      mountPath: /home/node/.n8n
+      sizeGB: 1
+    envVars:
+      - key: N8N_HOST
+        value: 0.0.0.0
+      - key: N8N_PORT
+        value: 5678
+      - key: N8N_PROTOCOL
+        value: https
+      - key: NODE_ENV
+        value: production
+      - key: WEBHOOK_URL
+        # Once your app is deployed, update this to your actual Render URL
+        value: https://n8n-automation.onrender.com/
+      - key: GENERIC_TIMEZONE
+        value: Asia/Kolkata

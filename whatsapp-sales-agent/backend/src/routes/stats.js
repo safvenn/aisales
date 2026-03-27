@@ -21,7 +21,8 @@ router.get('/', async (req, res) => {
       messages: convs.rows[0].total_messages,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[stats] Failed to load stats:', err);
+    res.status(500).json({ error: err.message || 'Failed to load stats' });
   }
 });
 

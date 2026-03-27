@@ -18,7 +18,8 @@ router.get('/', async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ leads: result.rows, count: result.rowCount });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[leads] Failed to load leads:', err);
+    res.status(500).json({ error: err.message || 'Failed to load leads' });
   }
 });
 
@@ -32,7 +33,8 @@ router.get('/:id/conversations', async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[leads] Failed to load conversations:', err);
+    res.status(500).json({ error: err.message || 'Failed to load conversations' });
   }
 });
 
@@ -47,7 +49,8 @@ router.patch('/:id/status', async (req, res) => {
     await pool.query('UPDATE leads SET status = $1 WHERE id = $2', [status, id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[leads] Failed to update lead status:', err);
+    res.status(500).json({ error: err.message || 'Failed to update lead status' });
   }
 });
 
@@ -62,7 +65,8 @@ router.post('/', async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Phone already exists' });
-    res.status(500).json({ error: err.message });
+    console.error('[leads] Failed to create lead:', err);
+    res.status(500).json({ error: err.message || 'Failed to create lead' });
   }
 });
 

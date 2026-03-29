@@ -3,6 +3,7 @@ require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
 const { connectToWhatsApp } = require('./services/whatsapp');
+const { connectDb } = require('./db');
 
 const app = express();
 
@@ -17,22 +18,34 @@ app.use(express.json());
 app.use('/api/leads', require('./routes/leads'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/campaigns', require('./routes/campaigns'));
+app.use('/api/whatsapp', require('./routes/whatsapp'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 
-const PORT = process.env.PORT || 3001;
-const server = app.listen(PORT, () => {
-  console.log(`[startup] Backend API listening on port ${PORT}`);
-  console.log('[startup] Health check available at /health');
-  console.log('[startup] Initializing WhatsApp connection');
-  connectToWhatsApp().catch((err) => console.error('[startup] Failed to start WhatsApp:', err));
-});
+async function start() {
+  try {
+    await connectDb();
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`[startup] Port ${PORT} is already in use. Stop the existing process or set a different PORT.`);
-    return;
+    const PORT = process.env.PORT || 3001;
+    const server = app.listen(PORT, () => {
+      console.log(`[startup] Backend API listening on port ${PORT}`);
+      console.log('[startup] Health check available at /health');
+      console.log('[startup] Initializing WhatsApp connection');
+      connectToWhatsApp().catch((err) => console.error('[startup] Failed to start WhatsApp:', err));
+    });
+
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`[startup] Port ${PORT} is already in use. Stop the existing process or set a different PORT.`);
+        return;
+      }
+
+      console.error('[startup] Server failed to start:', err);
+    });
+  } catch (err) {
+    console.error('[startup] Fatal error during init:', err);
+    process.exit(1);
   }
+}
 
-  console.error('[startup] Server failed to start:', err);
-});
+start();

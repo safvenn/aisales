@@ -1,7 +1,8 @@
 const axios = require('axios');
 const aiService = require('./ai');
 const whatsappService = require('./whatsapp');
-const pool = require('../db');
+const Lead = require('../models/Lead');
+const Conversation = require('../models/Conversation');
 
 // 1. AI generates niche keywords for the region
 async function generateKeywordsByAI(targetAudience) {
@@ -108,16 +109,18 @@ async function executeSingleCycle(targetAudience) {
                 if (phone.length < 10) continue;
 
                 // Check if already in DB
-                const exists = await pool.query('SELECT id FROM leads WHERE phone = $1', [phone]);
-                if (exists.rowCount > 0) continue;
+                const exists = await Lead.findOne({ phone });
+                if (exists) continue;
 
                 // Save to DB
                 console.log(`📡 [DEBUG-V3] Mapping lead: name="${place.title}", phone="${phone}", type="${place.categoryName || 'Business'}"`);
-                const insertRes = await pool.query(
-                    `INSERT INTO leads (name, phone, business_type, city, status) VALUES ($1, $2, $3, $4, 'pending') RETURNING id`,
-                    [place.title, phone, place.categoryName || 'Business', place.city || 'Kerala']
-                );
-                const leadId = insertRes.rows[0].id;
+                const lead = await Lead.create({
+                    name: place.title,
+                    phone,
+                    business_type: place.categoryName || 'Business',
+                    city: place.city || 'Kerala',
+                    status: 'pending',
+                });
 
                 console.log(`🌟 Found new lead: ${place.title} (${phone}) without a website!`);
 
@@ -134,11 +137,12 @@ async function executeSingleCycle(targetAudience) {
 
                 // Update DB (wrapped in try-catch to avoid crashing cycle if log fails)
                 try {
-                    await pool.query(
-                        `INSERT INTO conversations (lead_id, direction, message) VALUES ($1, 'outbound', $2)`,
-                        [leadId, msg]
-                    );
-                    await pool.query(`UPDATE leads SET status = 'contacted', message_sent = true WHERE id = $1`, [leadId]);
+                    await Conversation.create({
+                        lead_id: lead._id,
+                        direction: 'outbound',
+                        message: msg,
+                    });
+                    await Lead.findByIdAndUpdate(lead._id, { status: 'contacted', message_sent: true });
                 } catch (dbErr) {
                     console.error(`⚠️ Failed to record conversation for ${phone}:`, dbErr.message);
                 }

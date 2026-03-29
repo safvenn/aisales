@@ -12,6 +12,10 @@ function App() {
     label: 'CHECKING API',
     detail: 'Connecting to backend',
   })
+  const [whatsAppStatus, setWhatsAppStatus] = useState({
+    state: 'checking',
+    label: 'WA CHECKING',
+  })
 
   return (
     <div className="min-h-screen bg-[#050505] flex text-white overflow-hidden relative selection:bg-blue-500/30">
@@ -28,10 +32,15 @@ function App() {
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           systemStatus={systemStatus}
+          whatsAppStatus={whatsAppStatus}
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
           {activeTab === 'Dashboard' ? (
-            <Dashboard searchTerm={searchTerm} setSystemStatus={setSystemStatus} />
+            <Dashboard
+              searchTerm={searchTerm}
+              setSystemStatus={setSystemStatus}
+              setWhatsAppStatus={setWhatsAppStatus}
+            />
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center animate-pulse">
                <div className="w-20 h-20 bg-white/5 rounded-3xl mb-6 flex items-center justify-center border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)]">

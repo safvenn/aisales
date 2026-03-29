@@ -1,24 +1,26 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+const Lead = require('../models/Lead');
+const Conversation = require('../models/Conversation');
 
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT
-        COUNT(*) FILTER (WHERE status = 'pending')    AS pending,
-        COUNT(*) FILTER (WHERE status = 'contacted')  AS contacted,
-        COUNT(*) FILTER (WHERE status = 'interested') AS interested,
-        COUNT(*) FILTER (WHERE status = 'hot')        AS hot,
-        COUNT(*) FILTER (WHERE status = 'dead')       AS dead,
-        COUNT(*) FILTER (WHERE status = 'converted')  AS converted,
-        COUNT(*)                                       AS total
-      FROM leads
-    `);
-    const convs = await pool.query(`SELECT COUNT(*) AS total_messages FROM conversations`);
+    const statuses = ['pending', 'contacted', 'interested', 'hot', 'dead', 'converted'];
+    const counts = Object.fromEntries(statuses.map((s) => [s, 0]));
+
+    const grouped = await Lead.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]);
+    grouped.forEach(({ _id, count }) => {
+      counts[_id] = count;
+    });
+
+    const total = await Lead.countDocuments();
+    const messages = await Conversation.countDocuments();
+
     res.json({
-      leads: result.rows[0],
-      messages: convs.rows[0].total_messages,
+      leads: { ...counts, total },
+      messages,
     });
   } catch (err) {
     console.error('[stats] Failed to load stats:', err);

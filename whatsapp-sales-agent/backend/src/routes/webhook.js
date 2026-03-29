@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+const Lead = require('../models/Lead');
+const Conversation = require('../models/Conversation');
 const whatsappService = require('../services/whatsapp');
 const aiService = require('../services/ai');
 
@@ -31,8 +32,7 @@ router.post('/', async (req, res) => {
     console.log(`📩 Message from ${phone}: ${text}`);
 
     // Find lead in DB
-    const leadResult = await pool.query('SELECT * FROM leads WHERE phone = $1', [phone]);
-    const lead = leadResult.rows[0];
+    const lead = await Lead.findOne({ phone });
 
     if (!lead) {
       console.log(`⚠️ Unknown sender: ${phone}`);
@@ -40,10 +40,11 @@ router.post('/', async (req, res) => {
     }
 
     // Save inbound message
-    await pool.query(
-      `INSERT INTO conversations (lead_id, direction, message) VALUES ($1, 'inbound', $2)`,
-      [lead.id, text]
-    );
+    await Conversation.create({
+      lead_id: lead._id,
+      direction: 'inbound',
+      message: text,
+    });
 
     // Classify intent with AI
     const intent = await aiService.classifyIntent(text);
@@ -58,7 +59,7 @@ router.post('/', async (req, res) => {
       'Call Request': 'hot',
     };
     const newStatus = statusMap[intent] || 'contacted';
-    await pool.query(`UPDATE leads SET status = $1 WHERE id = $2`, [newStatus, lead.id]);
+    await Lead.findByIdAndUpdate(lead._id, { status: newStatus });
 
     if (intent === 'Not Interested') return;
 
@@ -67,10 +68,12 @@ router.post('/', async (req, res) => {
     await whatsappService.sendMessage(phone, reply);
 
     // Save outbound message
-    await pool.query(
-      `INSERT INTO conversations (lead_id, direction, message, intent) VALUES ($1, 'outbound', $2, $3)`,
-      [lead.id, reply, intent]
-    );
+    await Conversation.create({
+      lead_id: lead._id,
+      direction: 'outbound',
+      message: reply,
+      intent,
+    });
 
   } catch (err) {
     console.error('❌ Webhook error:', err.message);

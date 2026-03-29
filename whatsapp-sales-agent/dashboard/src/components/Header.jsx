@@ -6,8 +6,9 @@ const statusStyles = {
   checking: 'bg-amber-500/10 border-amber-500/20 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.25)]',
 }
 
-export default function Header({ sidebarOpen, setSidebarOpen, searchTerm, setSearchTerm, systemStatus }) {
+export default function Header({ sidebarOpen, setSidebarOpen, searchTerm, setSearchTerm, systemStatus, whatsAppStatus }) {
   const currentStatus = systemStatus?.state || 'checking'
+  const waStatus = whatsAppStatus?.state || 'checking'
 
   return (
     <header className="h-16 glass border-b border-white/5 px-4 md:px-8 flex items-center justify-between sticky top-0 z-10 transition-all">
@@ -40,6 +41,10 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchTerm, setSea
         <div className={`hidden sm:flex items-center space-x-2 border px-3 py-1.5 rounded-full ${statusStyles[currentStatus] || statusStyles.checking}`}>
           <div className={`w-2 h-2 rounded-full ${currentStatus === 'online' ? 'bg-emerald-400 animate-pulse' : currentStatus === 'offline' ? 'bg-red-400' : 'bg-amber-300 animate-pulse'}`} />
           <span className="text-xs font-medium tracking-wide">{systemStatus?.label || 'CHECKING API'}</span>
+        </div>
+        <div className={`hidden sm:flex items-center space-x-2 border px-3 py-1.5 rounded-full ${statusStyles[waStatus] || statusStyles.checking}`}>
+          <div className={`w-2 h-2 rounded-full ${waStatus === 'online' ? 'bg-emerald-400 animate-pulse' : waStatus === 'offline' ? 'bg-red-400' : 'bg-amber-300 animate-pulse'}`} />
+          <span className="text-xs font-medium tracking-wide">{whatsAppStatus?.label || 'WA CHECKING'}</span>
         </div>
 
         <button className="relative p-2 rounded-full hover:bg-white/5 text-white/70 hover:text-white transition-colors">

@@ -16,7 +16,7 @@ const chartData = [
   { name: '20:00', sent: 180, replied: 85 }
 ];
 
-export default function Dashboard({ searchTerm = '', setSystemStatus = () => {} }) {
+export default function Dashboard({ searchTerm = '', setSystemStatus = () => {}, setWhatsAppStatus = () => {} }) {
   const [statsData, setStatsData] = useState({
     leads: { total: 0, pending: 0, contacted: 0, interested: 0, hot: 0, dead: 0, converted: 0 },
     messages: 0
@@ -43,10 +43,11 @@ export default function Dashboard({ searchTerm = '', setSystemStatus = () => {} 
         detail: `Connecting to ${API_URL}`
       });
 
-      const [statsRes, leadsRes, campRes] = await Promise.all([
+      const [statsRes, leadsRes, campRes, waRes] = await Promise.all([
         axios.get(`${API_URL}/stats`),
         axios.get(`${API_URL}/leads?limit=10`),
-        axios.get(`${API_URL}/campaigns/status`)
+        axios.get(`${API_URL}/campaigns/status`),
+        axios.get(`${API_URL}/whatsapp/status`)
       ]);
       
       setStatsData({
@@ -60,11 +61,19 @@ export default function Dashboard({ searchTerm = '', setSystemStatus = () => {} 
         label: 'API ONLINE',
         detail: API_URL
       });
+      setWhatsAppStatus({
+        state: waRes?.data?.status || 'offline',
+        label: `WA ${waRes?.data?.status?.toUpperCase?.() || 'OFFLINE'}`
+      });
     } catch (err) {
       setSystemStatus({
         state: 'offline',
         label: 'API OFFLINE',
         detail: err?.response?.data?.error || err?.message || 'Unable to reach backend'
+      });
+      setWhatsAppStatus({
+        state: 'offline',
+        label: 'WA OFFLINE',
       });
       console.error('Error fetching dashboard data', err);
     } finally {
